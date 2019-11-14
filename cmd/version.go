@@ -21,8 +21,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -36,22 +38,61 @@ var (
 	Version string
 )
 
-// versionCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: fmt.Sprintf("Print out %s version information", os.Args[0]),
-	Long:  fmt.Sprintf("Get the current version of %s", os.Args[0]),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return print(map[string]interface{}{
-			"created_at": time.Now().UTC().Format(time.RFC3339),
-			"version":    Version,
-			"revision":   GitRevision,
-		})
-	},
+// VersionData represents all the information for a version
+type VersionData struct {
+	CreatedAt time.Time `json:"created_at"`
+	Version   string    `json:"version,omitempty"`
+	Revision  string    `json:"revision,omitempty"`
 }
 
+func newVersionCommand() *cobra.Command {
+	// versionCmd represents the version command
+	var format string
+
+	funcMap := template.FuncMap{
+		// The name "title" is what the function will be called in the template text.
+		"json": func(i interface{}) (string, error) {
+			b, err := json.Marshal(i)
+			if err != nil {
+				return "", fmt.Errorf("could not marshal data: %w", err)
+			}
+			return string(b), nil
+		},
+	}
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: fmt.Sprintf("Print out %s version information", os.Args[0]),
+		Long: fmt.Sprintf(`Get the current version of %s
+
+The -f flag still specifies a format template
+applied to a Go struct
+
+
+type versionData struct {
+	CreatedAt time.Time
+	Version   string
+	Revision  string
+}`, os.Args[0]),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			data := &VersionData{
+				CreatedAt: time.Now(),
+				Version:   Version,
+				Revision:  GitRevision,
+			}
+			tpl, err := template.New("version").Funcs(funcMap).Parse(format + "\n")
+			if err != nil {
+				return fmt.Errorf("could not create template: %w", err)
+			}
+			return tpl.Execute(os.Stdout, data)
+		},
+	}
+
+	cmd.Flags().StringVarP(&format, "format", "f", "{{ . | json }}", "define a format for printing")
+
+	return cmd
+}
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(newVersionCommand())
 
 	// Here you will define your flags and configuration settings.
 
