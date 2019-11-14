@@ -41,14 +41,12 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: fmt.Sprintf("Print out %s version information", os.Args[0]),
 	Long:  fmt.Sprintf("Get the current version of %s", os.Args[0]),
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := print(map[string]interface{}{
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return print(map[string]interface{}{
 			"created_at": time.Now().UTC().Format(time.RFC3339),
 			"version":    Version,
 			"revision":   GitRevision,
-		}); err != nil {
-			panic(err)
-		}
+		})
 	},
 }
 
