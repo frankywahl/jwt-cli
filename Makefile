@@ -1,15 +1,10 @@
 BINARY = jwt
-VET_REPORT = vet.report
-TEST_REPORT = tests.xml
 
-VERSION="0.0.1"
-GOARCH = amd64
-
-DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+VERSION?="tip"
 COMMIT=$(shell git rev-parse HEAD)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-GITHUB_USERNAME=frankywahl
+GITHUB_TOKEN?=""
 
 LDFLAGS = -ldflags "-X github.com/frankywahl/jwt-cli/cmd.GitRevision=${COMMIT} -X github.com/frankywahl/jwt-cli/cmd.Version=${VERSION} -X github.com/frankywahl/jwt-cli/cmd.CreatedAt=${DATE}"
 
@@ -19,29 +14,20 @@ install:
 	go build ${LDFLAGS} -o jwt
 	mv jwt ${GOPATH}/bin
 
-darwin:
-	GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-darwin-${GOARCH} . ;
-
-linux:
-	GOOS=linux GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-linux-${GOARCH} . ;
-
-windows:
-	GOOS=windows GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-windows-${GOARCH}.exe . ;
-
 test:
-	go test -v ./... 2>&1 | tee ${TEST_REPORT} ;
+	go test -v --race ./...
 
 vet:
-	go vet ./... > ${VET_REPORT} 2>&1 ;
+	go vet ./...
 
 fmt:
-	go fmt $$(go list ./... | grep -v /vendor/) ;
+	test -z $$(gofmt -l .) # This will return non-0 if unsuccessful  run `go fmt ./...` to fix
 
-
-
-clean:
-	-rm -f ${TEST_REPORT}
-	-rm -f ${VET_REPORT}
-	-rm -f ${BINARY}
-	-rm -f ${BINARY}-*
-
+release:
+	git tag v${VERSION}
+	docker run --rm --privileged \
+		-v $(shell pwd):/go/src/github.com/frankywahl/jwt \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-w /go/src/github.com/frankywahl/jwt \
+		-e GITHUB_TOKEN=${GITHUB_TOKEN} \
+		goreleaser/goreleaser release --rm-dist
