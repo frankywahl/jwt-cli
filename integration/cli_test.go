@@ -51,7 +51,7 @@ func TestCLI(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"no-arguments", []string{}, "encode-no-args"},
+		{"no-arguments", []string{}, "no-args"},
 
 		// Encoding
 		{"encoding", []string{"encode", "--help"}, "encoding-help"},
@@ -60,7 +60,7 @@ func TestCLI(t *testing.T) {
 		{"encoding with sign method", []string{"encode", "--secret", "SECRET", "--sign-method", "H512", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding-secret-sign-method"},
 
 		// Decoding
-		{"decode", []string{}, "encode-no-args"},
+		{"decode", []string{"decode", "--help"}, "decode-help"},
 		{"decode token", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo"}, "decode-no-args"},
 		{"decode token with secret", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo", "--secret", "SECRET"}, "decode-with-secret"},
 	}

@@ -1,0 +1,20 @@
+Decode JWT web tokens.
+
+This will print out the result of decoding the token. This will consist
+of a 3 part response:
+
+	* active: is the token enabled for the current time
+	* header: information encoded from the standard
+	* payload: the set of claims the token contains
+	* signature: whether the token has been signed or not
+
+Usage:
+  ./jwt-cli decode [flags]
+
+Aliases:
+  decode, d
+
+Flags:
+  -h, --help            help for decode
+  -s, --secret string   the secret to verify signature / can use JWT_SECRET env var
+  -t, --token string    the token to decode. Using @- will read the token from stdin (default "@-")
