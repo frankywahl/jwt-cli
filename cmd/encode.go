@@ -27,7 +27,6 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -58,14 +57,14 @@ Example:
 		if data == "@-" {
 			stdIn, err := readFromStdIn()
 			if err != nil {
-				return errors.Wrapf(err, "could not read from stdIn")
+				return fmt.Errorf("could not read from stdIn: %w", err)
 			}
 			data = string(stdIn)
 		}
 
 		var dataJSON map[string]interface{}
 		if err := json.Unmarshal([]byte(data), &dataJSON); err != nil {
-			return errors.Wrap(err, "could not unmarshal the data")
+			return fmt.Errorf("could not unmarshal the data: %w", err)
 		}
 
 		if t, ok := dataJSON["exp"]; ok { // t is a unix timestamp
@@ -88,7 +87,7 @@ Example:
 
 		token, err := claim.SignedString([]byte(secret))
 		if err != nil {
-			return errors.New("could not write token")
+			return fmt.Errorf("could not write token")
 		}
 
 		fmt.Printf("%s\n", token)

@@ -27,7 +27,6 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +49,7 @@ of a 3 part response:
 		if token == "@-" {
 			stdIn, err := readFromStdIn()
 			if err != nil {
-				return errors.Wrap(err, "could not read from stdIn")
+				return fmt.Errorf("could not read from stdIn: %w", err)
 			}
 			token = strings.TrimSpace(string(stdIn))
 		}
@@ -66,7 +65,7 @@ of a 3 part response:
 		if err != nil {
 			if ve, ok := err.(*jwt.ValidationError); ok {
 				if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-					return errors.New("token malformed")
+					return fmt.Errorf("token malformed")
 				}
 			}
 		}
@@ -96,7 +95,7 @@ of a 3 part response:
 		result["header"] = token.Header
 
 		if err := print(result); err != nil {
-			return errors.Wrap(err, "could not print the result")
+			return fmt.Errorf("could not print the result: %w", err)
 		}
 		return nil
 	},

@@ -27,8 +27,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
-
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -102,10 +100,10 @@ func initConfig() {
 func readFromStdIn() ([]byte, error) {
 	info, err := os.Stdin.Stat()
 	if err != nil {
-		return []byte{}, errors.New("could not get StdIn")
+		return []byte{}, fmt.Errorf("could not get StdIn")
 	}
 	if info.Mode()&os.ModeCharDevice == os.ModeCharDevice { // || info.Size() <= 0 {
-		return []byte{}, errors.New("could not read the data")
+		return []byte{}, fmt.Errorf("could not read the data")
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -126,7 +124,7 @@ func readFromStdIn() ([]byte, error) {
 func print(result map[string]interface{}) error {
 	output, err := json.Marshal(result)
 	if err != nil {
-		errors.Wrapf(err, "could not marhsal result")
+		return fmt.Errorf("could not marhsal result: %w", err)
 	}
 	fmt.Println(string(output))
 	return nil
