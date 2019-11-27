@@ -5,12 +5,13 @@ TEST_REPORT = tests.xml
 VERSION="0.0.1"
 GOARCH = amd64
 
+DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
 GITHUB_USERNAME=frankywahl
 
-LDFLAGS = -ldflags "-X github.com/frankywahl/jwt-cli/cmd.GitRevision=${COMMIT} -X github.com/frankywahl/jwt-cli/cmd.Version=${VERSION}"
+LDFLAGS = -ldflags "-X github.com/frankywahl/jwt-cli/cmd.GitRevision=${COMMIT} -X github.com/frankywahl/jwt-cli/cmd.Version=${VERSION} -X github.com/frankywahl/jwt-cli/cmd.CreatedAt=${DATE}"
 
 all: clean test vet linux darwin windows
 

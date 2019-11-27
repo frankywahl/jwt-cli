@@ -36,6 +36,9 @@ var (
 
 	//Version of the binary
 	Version string
+
+	//CreatedAt is when the binary was created
+	CreatedAt string
 )
 
 // VersionData represents all the information for a version
@@ -74,8 +77,15 @@ type versionData struct {
 	Revision  string
 }`, os.Args[0]),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if CreatedAt == "" {
+				CreatedAt = time.Now().UTC().Format(time.RFC3339)
+			}
+			createdAt, err := time.Parse(time.RFC3339, CreatedAt)
+			if err != nil {
+				return fmt.Errorf("could not parse time: %w", err)
+			}
 			data := &VersionData{
-				CreatedAt: time.Now(),
+				CreatedAt: createdAt.UTC(),
 				Version:   Version,
 				Revision:  GitRevision,
 			}
