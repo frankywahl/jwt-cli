@@ -30,6 +30,6 @@ make install
 ### Homebrew
 
 ```bash
-brew tap frankywahl/brew git@github.com:frankywahl/homebrew-brew.git
-brew install jwt-cli
+brew tap frankywahl/tap
+brew install frankywahl/tap/jwt
 ```
