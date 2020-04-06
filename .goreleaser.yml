@@ -50,3 +50,17 @@ brews:
   github:
     owner: frankywahl
     name: homebrew-tap
+
+dockers:
+  -
+    binaries:
+    - jwt
+    image_templates:
+    - "frankywahl/jwt:latest"
+    - "docker.pkg.github.com/frankywahl/jwt-cli/jwt:latest"
+    dockerfile: .goreleaser.Dockerfile
+    build_flag_templates:
+    - "--pull"
+    - "--build-arg=VERSION={{.Version}}"
+    - "--build-arg=COMMIT={{.FullCommit}}"
+    - "--build-arg=DATE={{.Date}}"
