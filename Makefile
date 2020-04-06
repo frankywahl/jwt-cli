@@ -1,8 +1,8 @@
 BINARY = jwt
 
 VERSION?="tip"
-COMMIT=$(shell git rev-parse HEAD)
-DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+COMMIT?=$(shell git rev-parse HEAD)
+DATE?=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 GITHUB_TOKEN?=""
 
