@@ -31,3 +31,6 @@ release:
 		-w /go/src/github.com/frankywahl/jwt \
 		-e GITHUB_TOKEN=${GITHUB_TOKEN} \
 		goreleaser/goreleaser release --rm-dist
+
+docker:
+	docker build --pull --build-arg COMMIT=${COMMIT} --build-arg VERSION=${VERSION} --build-arg DATE=${DATE} -t frankywahl/jwt .

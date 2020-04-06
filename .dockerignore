@@ -1,0 +1,6 @@
+.git/*
+tests.xml
+vet.report
+jwt*
+
+dist/
