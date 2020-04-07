@@ -46,3 +46,24 @@ echo 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJIZWxsbyI6IndvcmxkIiwiZXhwIjoxNTUzN
 ```bash
 make install
 ```
+
+## Help
+
+You can get help on the command line to see supported commands:
+
+```bash
+jwt --help
+```
+
+Then for a specific operation example
+
+```bash
+jwt encode --help
+```
+
+## Code Status
+![](https://github.com/frankywahl/jwt-cli/workflows/Run%20tests/badge.svg?branch=master)
+
+## Copyright
+
+Copyright (c) 2020 Franky W.
