@@ -120,11 +120,13 @@ func readFromStdIn() ([]byte, error) {
 }
 
 // print outputs a JSON marshal dump to the output
-func print(result map[string]interface{}) error {
-	output, err := json.Marshal(result)
-	if err != nil {
-		return fmt.Errorf("could not marhsal result: %w", err)
+func print(results []map[string]interface{}) error {
+	for _, result := range results {
+		output, err := json.Marshal(result)
+		if err != nil {
+			return fmt.Errorf("could not marhsal result: %w", err)
+		}
+		fmt.Println(string(output))
 	}
-	fmt.Println(string(output))
 	return nil
 }

@@ -70,29 +70,37 @@ of a 3 part response:
 			}
 		}
 
-		result := map[string]interface{}{}
+		result := make([]map[string]interface{}, 2)
+
+		// result := map[string]interface{}{}
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if ok {
 			cls := map[string]interface{}{}
 			for k, v := range claims {
 				cls[k] = v
 			}
-			result["active"] = active(cls["nbf"], cls["exp"])
 
 			for _, tc := range []string{"exp", "nbf", "iat"} { // https://tools.ietf.org/html/rfc7519#section-4.1
 				if unix, ok := cls[tc].(float64); ok {
 					t := time.Unix(int64(unix), 0)
-					cls[tc] = t.UTC().Format(time.RFC3339)
+					now := time.Now()
+					if now.Before(t) && tc == "nbf" && !skipTime {
+						return fmt.Errorf("token is not valid for another %s, use `--skip-time`", t.Sub(now))
+					}
+					if now.After(t) && tc == "exp" && !skipTime {
+						return fmt.Errorf("token has expired for %s, use `--skip-time`", now.Sub(t))
+					}
+					if tc == "iat" {
+						cls[tc] = t.UTC().Format(time.RFC3339)
+					}
 				}
 			}
-			result["payload"] = cls
+			result[1] = cls
 		}
-		if token.Valid {
-			result["signature"] = true
-		} else {
-			result["signature"] = false
+		if !token.Valid && !skipSignature { // This also looks at nbf and exp
+			return fmt.Errorf("wrong signature, use `--skip-signature` if you dont want sign")
 		}
-		result["header"] = token.Header
+		result[0] = token.Header
 
 		if err := print(result); err != nil {
 			return fmt.Errorf("could not print the result: %w", err)
@@ -102,10 +110,14 @@ of a 3 part response:
 }
 
 var token string
+var skipSignature bool
+var skipTime bool
 
 func init() {
 	decodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret to verify signature / can use JWT_SECRET env var")
 	decodeCmd.Flags().StringVarP(&token, "token", "t", "@-", "the token to decode. Using @- will read the token from stdin")
+	decodeCmd.Flags().BoolVarP(&skipSignature, "skip-signature", "", false, "skip signature validation")
+	decodeCmd.Flags().BoolVarP(&skipTime, "skip-time", "", false, "skip time based validation (nbf, exp)")
 	rootCmd.AddCommand(decodeCmd)
 }
 
