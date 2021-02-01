@@ -47,12 +47,14 @@ brews:
   folder: Formula
   homepage: "http://github.com/frankywahl/jwt-cli"
   description: "CLI interaction with JWT (JSON Web Tokens)"
-  github:
+  tap:
     owner: frankywahl
     name: homebrew-tap
 
 dockers:
   -
+    goos: linux
+    goarch: amd64
     binaries:
     - jwt
     image_templates:
