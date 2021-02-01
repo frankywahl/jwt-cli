@@ -64,6 +64,7 @@ dockers:
     dockerfile: .goreleaser.Dockerfile
     build_flag_templates:
     - "--pull"
-    - "--build-arg=VERSION={{.Version}}"
-    - "--build-arg=COMMIT={{.FullCommit}}"
-    - "--build-arg=DATE={{.Date}}"
+    - "--build-arg=BUILD_VERSION={{.Version}}"
+    - "--build-arg=BUILD_DATE={{.Date}}"
+    - "--build-arg=REVISION={{.FullCommit}}"
+    - "--build-arg=SOURCE={{.Env.SOURCE}}"
