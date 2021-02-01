@@ -59,9 +59,8 @@ dockers:
     - "frankywahl/jwt:latest"
     - "frankywahl/jwt:{{ .Tag }}"
     - "frankywahl/jwt:v{{ .Major }}.{{ .Minor }}"
-    - "docker.pkg.github.com/frankywahl/jwt-cli/jwt:latest"
-    - "docker.pkg.github.com/frankywahl/jwt-cli/jwt:{{ .Tag }}"
-    - "docker.pkg.github.com/frankywahl/jwt-cli/jwt:v{{ .Major }}.{{ .Minor }}"
+    - "ghcr.io/frankywahl/jwt-cli:latest"
+    - "ghcr.io/frankywahl/jwt-cli:v{{ .Major }}.{{ .Minor }}"
     dockerfile: .goreleaser.Dockerfile
     build_flag_templates:
     - "--pull"
