@@ -34,38 +34,24 @@ import (
 var cfgFile string
 var secret, signMethod string
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   fmt.Sprintf("%s", os.Args[0]),
-	Short: "JWT cli for generating web tokens",
-	Long: `JWT cli allows you to interact with JWT (JSON Web Tokens) directly
+func JWT() *cobra.Command {
+	cobra.OnInitialize(initConfig)
+	// rootCmd represents the base command when called without any subcommands
+	rootCmd := &cobra.Command{
+		Use:   fmt.Sprintf("%s", os.Args[0]),
+		Short: "JWT cli for generating web tokens",
+		Long: `JWT cli allows you to interact with JWT (JSON Web Tokens) directly
 via the command line.
 
 https://tools.ietf.org/html/rfc7519
 `,
-	SilenceUsage: true,
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		// fmt.Println(err)
-		os.Exit(1)
+		SilenceUsage: true,
 	}
-}
+	rootCmd.AddCommand(
+		newCompletionCommand(),
+	)
+	return rootCmd
 
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.jwt-cli.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
