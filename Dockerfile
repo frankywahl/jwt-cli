@@ -1,4 +1,4 @@
-FROM golang:1.14.1-alpine as build-env
+FROM golang:1.15-apline as build-env
 ARG VERSION="tip"
 ARG COMMIT="HEAD"
 ARG DATE=""
