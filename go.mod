@@ -8,7 +8,7 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.1.1
