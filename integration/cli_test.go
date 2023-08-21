@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -96,10 +95,11 @@ func TestCLI(t *testing.T) {
 }
 
 func writeFixture(t *testing.T, name string, content string) error {
-	return ioutil.WriteFile(name, []byte(content), 0644)
+	return os.WriteFile(name, []byte(content), 0o644)
 }
+
 func loadFixture(t *testing.T, path string) (string, error) {
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", errors.Wrapf(err, "could not read file %s", path)
 	}
