@@ -21,12 +21,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 )
 
@@ -61,12 +62,9 @@ of a 3 part response:
 
 			return []byte(secret), nil
 		})
-
 		if err != nil {
-			if ve, ok := err.(*jwt.ValidationError); ok {
-				if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-					return fmt.Errorf("token malformed")
-				}
+			if !errors.Is(err, jwt.ErrSignatureInvalid) {
+				return err
 			}
 		}
 

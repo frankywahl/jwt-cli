@@ -75,7 +75,7 @@ func TestCLI(t *testing.T) {
 			cmd := exec.Command("./"+binaryName, tt.args...)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("%v: %v", string(output), err)
 			}
 
 			fixturePath := fmt.Sprintf("%s/integration/fixtures/%s", dir, tt.fixture)
