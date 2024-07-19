@@ -11,8 +11,7 @@ LDFLAGS = -ldflags "-X github.com/frankywahl/jwt-cli/cmd.GitRevision=${COMMIT} -
 all: clean test vet linux darwin windows
 
 install:
-	go build ${LDFLAGS} -o jwt
-	mv jwt ${GOPATH}/bin
+	go build ${LDFLAGS} -o ${GOPATH}/bin/jwt
 
 test:
 	go test -v --race ./...
@@ -24,13 +23,12 @@ fmt:
 	test -z $$(gofmt -l .) # This will return non-0 if unsuccessful  run `go fmt ./...` to fix
 
 release:
-	git tag v${VERSION}
 	docker run --rm --privileged \
 		-v $(shell pwd):/go/src/github.com/frankywahl/jwt \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-w /go/src/github.com/frankywahl/jwt \
 		-e GITHUB_TOKEN=${GITHUB_TOKEN} \
-		goreleaser/goreleaser release --rm-dist
+		goreleaser/goreleaser release --clean --snapshot
 
 docker:
 	docker build --pull --build-arg COMMIT=${COMMIT} --build-arg VERSION=${VERSION} --build-arg DATE=${DATE} -t frankywahl/jwt .
