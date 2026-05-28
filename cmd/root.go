@@ -22,19 +22,23 @@ package cmd
 
 import (
 	"bufio"
+	"context"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
-var secret, signMethod, keyFile string
+var secret, signMethod, keyFile, jwkURL string
 
 // resolveSigningMethod maps a short method name to a jwt.SigningMethod.
 func resolveSigningMethod(method string) (jwt.SigningMethod, error) {
@@ -110,8 +114,56 @@ func getSigningKey(method jwt.SigningMethod) (interface{}, error) {
 	}
 }
 
+// getKeyFromJWKURL fetches a JWK or JWKS from the given URL and returns the
+// raw key material matching the token's "kid" header (if present). If the
+// endpoint returns a single JWK object it is wrapped into a set automatically.
+func getKeyFromJWKURL(token *jwt.Token, url string) (interface{}, error) {
+	set, err := jwk.Fetch(context.Background(), url)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch JWK(S) from %s: %w", url, err)
+	}
+
+	// Try to match by "kid" if the token carries one.
+	var key jwk.Key
+	if kid, ok := token.Header["kid"].(string); ok && kid != "" {
+		key, ok = set.LookupKeyID(kid)
+		if !ok {
+			return nil, fmt.Errorf("no key with kid %q found at %s", kid, url)
+		}
+	} else {
+		if set.Len() == 0 {
+			return nil, fmt.Errorf("JWK set at %s is empty", url)
+		}
+		var ok bool
+		key, ok = set.Key(0)
+		if !ok {
+			return nil, fmt.Errorf("could not retrieve first key from JWK set at %s", url)
+		}
+	}
+
+	var raw interface{}
+	if err := key.Raw(&raw); err != nil {
+		return nil, fmt.Errorf("could not extract raw key from JWK: %w", err)
+	}
+
+	// golang-jwt expects the public-key type for verification.
+	switch k := raw.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey, nil
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey, nil
+	case ed25519.PrivateKey:
+		return k.Public(), nil
+	default:
+		return raw, nil
+	}
+}
+
 // getVerificationKey returns the appropriate verification key for the token's method.
 func getVerificationKey(token *jwt.Token) (interface{}, error) {
+	if jwkURL != "" {
+		return getKeyFromJWKURL(token, jwkURL)
+	}
 	switch token.Method.(type) {
 	case *jwt.SigningMethodHMAC:
 		return []byte(secret), nil

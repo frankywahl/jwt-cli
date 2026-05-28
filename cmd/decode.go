@@ -31,6 +31,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errTokenExpired = errors.New("token is expired")
+
 // decodeCmd represents the decode command
 var decodeCmd = &cobra.Command{
 	Use:   "decode",
@@ -45,7 +47,8 @@ of a 3 part response:
 	* payload: the set of claims the token contains
 	* signature: whether the token has been signed or not
 `,
-	Aliases: []string{"d"},
+	Aliases:      []string{"d"},
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if token == "@-" {
 			stdIn, err := readFromStdIn()
@@ -60,7 +63,9 @@ of a 3 part response:
 			return getVerificationKey(token)
 		})
 		if err != nil {
-			if !errors.Is(err, jwt.ErrSignatureInvalid) && !errors.Is(err, jwt.ErrTokenUnverifiable) {
+			if !errors.Is(err, jwt.ErrSignatureInvalid) &&
+				!errors.Is(err, jwt.ErrTokenUnverifiable) &&
+				!errors.Is(err, jwt.ErrTokenExpired) {
 				return err
 			}
 		}
@@ -92,6 +97,11 @@ of a 3 part response:
 		if err := print(result); err != nil {
 			return fmt.Errorf("could not print the result: %w", err)
 		}
+
+		if ok && expired(claims) {
+			fmt.Fprintln(os.Stderr, "WARNING: token is expired")
+			return errTokenExpired
+		}
 		return nil
 	},
 }
@@ -101,6 +111,7 @@ var token string
 func init() {
 	decodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret to verify signature (for HMAC) / can use JWT_SECRET env var")
 	decodeCmd.Flags().StringVarP(&keyFile, "key-file", "k", "", "path to PEM public key file (for RSA/ECDSA/EdDSA)")
+	decodeCmd.Flags().StringVarP(&jwkURL, "jwk-url", "j", "", "URL of a JWK or JWKS endpoint to fetch the verification key from")
 	decodeCmd.Flags().StringVarP(&token, "token", "t", "@-", "the token to decode. Using @- will read the token from stdin")
 	rootCmd.AddCommand(decodeCmd)
 }
@@ -119,4 +130,12 @@ func active(nbf, exp interface{}) bool {
 		}
 	}
 	return true
+}
+
+func expired(claims jwt.MapClaims) bool {
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return false
+	}
+	return time.Now().After(time.Unix(int64(exp), 0))
 }

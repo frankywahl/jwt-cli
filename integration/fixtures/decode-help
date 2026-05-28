@@ -15,6 +15,8 @@ Aliases:
   decode, d
 
 Flags:
-  -h, --help            help for decode
-  -s, --secret string   the secret to verify signature / can use JWT_SECRET env var
-  -t, --token string    the token to decode. Using @- will read the token from stdin (default "@-")
+  -h, --help              help for decode
+  -j, --jwk-url string    URL of a JWK or JWKS endpoint to fetch the verification key from
+  -k, --key-file string   path to PEM public key file (for RSA/ECDSA/EdDSA)
+  -s, --secret string     the secret to verify signature (for HMAC) / can use JWT_SECRET env var
+  -t, --token string      the token to decode. Using @- will read the token from stdin (default "@-")

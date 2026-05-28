@@ -15,5 +15,6 @@ Aliases:
 Flags:
   -d, --data string          the claims to be signed. Using @- will read the data from stdin (default "@-")
   -h, --help                 help for encode
-  -s, --secret string        the secret needed
-  -m, --sign-method string   the signing method (default "H256")
+  -k, --key-file string      path to PEM private key file (for RSA/ECDSA/EdDSA)
+  -s, --secret string        the secret needed (for HMAC algorithms)
+  -m, --sign-method string   the signing method (H256,H384,H512,R256,R384,R512,E256,E384,E512,EdDSA) (default "H256")

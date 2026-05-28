@@ -49,19 +49,20 @@ func TestCLI(t *testing.T) {
 		name    string
 		args    []string
 		fixture string
+		wantErr bool
 	}{
-		{"no-arguments", []string{}, "no-args"},
+		{"no-arguments", []string{}, "no-args", false},
 
 		// Encoding
-		{"encoding", []string{"encode", "--help"}, "encoding-help"},
-		{"encoding with data", []string{"encode", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding"},
-		{"encoding with secret", []string{"encode", "--secret", "SECRET", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding-secret"},
-		{"encoding with sign method", []string{"encode", "--secret", "SECRET", "--sign-method", "H512", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding-secret-sign-method"},
+		{"encoding", []string{"encode", "--help"}, "encoding-help", false},
+		{"encoding with data", []string{"encode", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding", false},
+		{"encoding with secret", []string{"encode", "--secret", "SECRET", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding-secret", false},
+		{"encoding with sign method", []string{"encode", "--secret", "SECRET", "--sign-method", "H512", "-d", "{\"hello\":\"world\",\"exp\":0,\"nbf\":0,\"iat\":0}"}, "encoding-secret-sign-method", false},
 
-		// Decoding
-		{"decode", []string{"decode", "--help"}, "decode-help"},
-		{"decode token", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo"}, "decode-no-args"},
-		{"decode token with secret", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo", "--secret", "SECRET"}, "decode-with-secret"},
+		// Decoding — tokens with exp=0 are expired, so exit 1 is expected
+		{"decode", []string{"decode", "--help"}, "decode-help", false},
+		{"decode token", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo"}, "decode-no-args", true},
+		{"decode token with secret", []string{"decode", "-t", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjAsImhlbGxvIjoid29ybGQiLCJpYXQiOjAsIm5iZiI6MH0.nah_yz6eXP9Vu0W-ksnCc30eqpXiHwepssBYePjdJUo", "--secret", "SECRET"}, "decode-with-secret", true},
 	}
 
 	for _, tt := range tests {
@@ -72,17 +73,17 @@ func TestCLI(t *testing.T) {
 				t.Fatal(err)
 			}
 			cmd := exec.Command("./"+binaryName, tt.args...)
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				t.Fatalf("%v: %v", string(output), err)
+			stdout, runErr := cmd.Output()
+			if (runErr != nil) != tt.wantErr {
+				t.Fatalf("wantErr=%v but got err=%v\nstdout: %s", tt.wantErr, runErr, stdout)
 			}
 
 			fixturePath := fmt.Sprintf("%s/integration/fixtures/%s", dir, tt.fixture)
 
 			if *update {
-				writeFixture(t, fixturePath, string(output))
+				writeFixture(t, fixturePath, string(stdout))
 			}
-			actual := string(output)
+			actual := string(stdout)
 			expected, err := loadFixture(t, fixturePath)
 			if err != nil {
 				t.Fatalf("could not load fixture: %v", err)
