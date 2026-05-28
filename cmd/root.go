@@ -22,17 +22,159 @@ package cmd
 
 import (
 	"bufio"
+	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
-var secret, signMethod string
+var secret, signMethod, keyFile string
+
+// resolveSigningMethod maps a short method name to a jwt.SigningMethod.
+func resolveSigningMethod(method string) (jwt.SigningMethod, error) {
+	switch method {
+	case "H256":
+		return jwt.SigningMethodHS256, nil
+	case "H384":
+		return jwt.SigningMethodHS384, nil
+	case "H512":
+		return jwt.SigningMethodHS512, nil
+	case "R256":
+		return jwt.SigningMethodRS256, nil
+	case "R384":
+		return jwt.SigningMethodRS384, nil
+	case "R512":
+		return jwt.SigningMethodRS512, nil
+	case "E256":
+		return jwt.SigningMethodES256, nil
+	case "E384":
+		return jwt.SigningMethodES384, nil
+	case "E512":
+		return jwt.SigningMethodES512, nil
+	case "EdDSA":
+		return jwt.SigningMethodEdDSA, nil
+	default:
+		return nil, fmt.Errorf("unsupported signing method: %s", method)
+	}
+}
+
+// readKeyFile reads a PEM key file from disk.
+func readKeyFile(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read key file %s: %w", path, err)
+	}
+	return data, nil
+}
+
+// getSigningKey returns the appropriate signing key for the given method.
+func getSigningKey(method jwt.SigningMethod) (interface{}, error) {
+	switch method.(type) {
+	case *jwt.SigningMethodHMAC:
+		return []byte(secret), nil
+	case *jwt.SigningMethodRSA:
+		if keyFile == "" {
+			return nil, fmt.Errorf("RSA signing requires --key-file with a PEM private key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		return jwt.ParseRSAPrivateKeyFromPEM(pem)
+	case *jwt.SigningMethodECDSA:
+		if keyFile == "" {
+			return nil, fmt.Errorf("ECDSA signing requires --key-file with a PEM private key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		return jwt.ParseECPrivateKeyFromPEM(pem)
+	case *jwt.SigningMethodEd25519:
+		if keyFile == "" {
+			return nil, fmt.Errorf("EdDSA signing requires --key-file with a PEM private key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		return jwt.ParseEdPrivateKeyFromPEM(pem)
+	default:
+		return nil, fmt.Errorf("unsupported signing method type: %v", method.Alg())
+	}
+}
+
+// getVerificationKey returns the appropriate verification key for the token's method.
+func getVerificationKey(token *jwt.Token) (interface{}, error) {
+	switch token.Method.(type) {
+	case *jwt.SigningMethodHMAC:
+		return []byte(secret), nil
+	case *jwt.SigningMethodRSA:
+		if keyFile == "" {
+			return nil, fmt.Errorf("RSA verification requires --key-file with a PEM public key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		key, err := jwt.ParseRSAPublicKeyFromPEM(pem)
+		if err != nil {
+			// Try parsing as private key and extract public key
+			privKey, privErr := jwt.ParseRSAPrivateKeyFromPEM(pem)
+			if privErr != nil {
+				return nil, err
+			}
+			return &privKey.PublicKey, nil
+		}
+		return key, nil
+	case *jwt.SigningMethodECDSA:
+		if keyFile == "" {
+			return nil, fmt.Errorf("ECDSA verification requires --key-file with a PEM public key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		key, err := jwt.ParseECPublicKeyFromPEM(pem)
+		if err != nil {
+			privKey, privErr := jwt.ParseECPrivateKeyFromPEM(pem)
+			if privErr != nil {
+				return nil, err
+			}
+			return &privKey.PublicKey, nil
+		}
+		return key, nil
+	case *jwt.SigningMethodEd25519:
+		if keyFile == "" {
+			return nil, fmt.Errorf("EdDSA verification requires --key-file with a PEM public key")
+		}
+		pem, err := readKeyFile(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		key, err := jwt.ParseEdPublicKeyFromPEM(pem)
+		if err != nil {
+			privKey, privErr := jwt.ParseEdPrivateKeyFromPEM(pem)
+			if privErr != nil {
+				return nil, err
+			}
+			// ed25519.PrivateKey contains the public key in the last 32 bytes
+			if edKey, ok := privKey.(ed25519.PrivateKey); ok {
+				return edKey.Public(), nil
+			}
+			return nil, err
+		}
+		return key, nil
+	default:
+		return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	}
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

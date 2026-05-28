@@ -44,14 +44,9 @@ Example:
 `, os.Args[0]),
 	Aliases: []string{"e"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var signAlgorithm *jwt.SigningMethodHMAC
-		switch signMethod {
-		case "H256":
-			signAlgorithm = jwt.SigningMethodHS256
-		case "H384":
-			signAlgorithm = jwt.SigningMethodHS384
-		case "H512":
-			signAlgorithm = jwt.SigningMethodHS512
+		signAlgorithm, err := resolveSigningMethod(signMethod)
+		if err != nil {
+			return err
 		}
 
 		if data == "@-" {
@@ -85,7 +80,12 @@ Example:
 			),
 		)
 
-		token, err := claim.SignedString([]byte(secret))
+		signingKey, err := getSigningKey(signAlgorithm)
+		if err != nil {
+			return fmt.Errorf("could not get signing key: %w", err)
+		}
+
+		token, err := claim.SignedString(signingKey)
 		if err != nil {
 			return fmt.Errorf("could not write token")
 		}
@@ -98,8 +98,9 @@ Example:
 var data string
 
 func init() {
-	encodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret needed")
-	encodeCmd.Flags().StringVarP(&signMethod, "sign-method", "m", "H256", "the signing method")
+	encodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret needed (for HMAC algorithms)")
+	encodeCmd.Flags().StringVarP(&signMethod, "sign-method", "m", "H256", "the signing method (H256,H384,H512,R256,R384,R512,E256,E384,E512,EdDSA)")
+	encodeCmd.Flags().StringVarP(&keyFile, "key-file", "k", "", "path to PEM private key file (for RSA/ECDSA/EdDSA)")
 	encodeCmd.Flags().StringVarP(&data, "data", "d", "@-", "the claims to be signed. Using @- will read the data from stdin")
 	rootCmd.AddCommand(encodeCmd)
 }

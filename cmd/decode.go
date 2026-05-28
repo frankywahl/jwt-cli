@@ -55,15 +55,12 @@ of a 3 part response:
 			token = strings.TrimSpace(string(stdIn))
 		}
 
-		token, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-
-			return []byte(secret), nil
+		parser := jwt.NewParser()
+		token, err := parser.Parse(token, func(token *jwt.Token) (interface{}, error) {
+			return getVerificationKey(token)
 		})
 		if err != nil {
-			if !errors.Is(err, jwt.ErrSignatureInvalid) {
+			if !errors.Is(err, jwt.ErrSignatureInvalid) && !errors.Is(err, jwt.ErrTokenUnverifiable) {
 				return err
 			}
 		}
@@ -102,7 +99,8 @@ of a 3 part response:
 var token string
 
 func init() {
-	decodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret to verify signature / can use JWT_SECRET env var")
+	decodeCmd.Flags().StringVarP(&secret, "secret", "s", os.Getenv("JWT_SECRET"), "the secret to verify signature (for HMAC) / can use JWT_SECRET env var")
+	decodeCmd.Flags().StringVarP(&keyFile, "key-file", "k", "", "path to PEM public key file (for RSA/ECDSA/EdDSA)")
 	decodeCmd.Flags().StringVarP(&token, "token", "t", "@-", "the token to decode. Using @- will read the token from stdin")
 	rootCmd.AddCommand(decodeCmd)
 }
